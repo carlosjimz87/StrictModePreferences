@@ -3,6 +3,7 @@ package com.carlosjimz87.strictmodeapp
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.lifecycleScope
@@ -22,19 +23,31 @@ class MainActivity : AppCompatActivity() {
 
         // write data store value
         lifecycleScope.launch {
-            save("KEY", "HELLO")
+            val text = read("KEY", "")
+            val num = read("NUM", 0)
+
+            withContext(Dispatchers.Main) {
+                textView.text = "$text $num"
+            }
+
         }
 
         // write data store value at click
         button.setOnClickListener {
             lifecycleScope.launch {
-                val text = read("KEY", "")
 
-                withContext(Dispatchers.Main){
-                    textView.text = text
+                val num = read("NUM", 0)
+
+                save("KEY", "HELLO")
+                save("NUM", num +1 )
+
+                val text2 = read("KEY", "")
+                val num2 = read("NUM", 0)
+
+                withContext(Dispatchers.Main) {
+                    textView.text = "$text2 $num2"
                 }
             }
-
         }
 
     }
@@ -46,8 +59,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun save(key: String, value: Int) {
+        val dataStoreKey = intPreferencesKey(key)
+        dataStore.edit { settings ->
+            settings[dataStoreKey] = value
+        }
+    }
+
     private suspend fun read(key: String, default: String): String {
         val dataStoreKey = stringPreferencesKey(key)
+        val preferences = dataStore.data.first()
+        return preferences[dataStoreKey] ?: default
+    }
+
+    private suspend fun read(key: String, default: Int): Int {
+        val dataStoreKey = intPreferencesKey(key)
         val preferences = dataStore.data.first()
         return preferences[dataStoreKey] ?: default
     }
